@@ -1,6 +1,5 @@
 #include "raylib.h"
 #include <stdio.h>
-#include "cursor.h"
 #include "hub.h"
 #include "selecaoagentes.h"
 
@@ -18,8 +17,6 @@ typedef struct{
 
 void InicializarJogo(void){
     SetWindowTitle("Hellbound Blackjack - Selecao de Personagem");
-    HideCursor();
-    loadCursor();
 }
 
 void CarregarAnimacoes(AnimacaoPersonagem* guerreiro, AnimacaoPersonagem* maga, AnimacaoPersonagem* arqueiro){
@@ -37,23 +34,9 @@ void CarregarAnimacoes(AnimacaoPersonagem* guerreiro, AnimacaoPersonagem* maga, 
     }
 }
 
-void AtualizarSelecao(int* estado, int* personagemSel, int* personagemConfirmado, bool* jogoIniciado, Vector2 mouseReal, 
-      Rectangle hitboxG, Rectangle hitboxM, Rectangle hitboxA){
+void AtualizarSelecao(int* estado, int* personagemSel, int* personagemConfirmado, bool* jogoIniciado){
     bool mudou = false;
-    int personagemHovered = *personagemSel;
-    bool mouseSobre = false;
-    if(CheckCollisionPointRec(mouseReal, hitboxG)){ 
-        personagemHovered = guerreiro; mouseSobre = true; 
-    }
-    else if(CheckCollisionPointRec(mouseReal, hitboxM)){ 
-        personagemHovered = maga; mouseSobre = true; 
-    }
-    else if(CheckCollisionPointRec(mouseReal, hitboxA)){ 
-        personagemHovered = arqueiro; mouseSobre = true; 
-    }
-    if(mouseSobre && personagemHovered != *personagemSel){ 
-        *personagemSel = personagemHovered; mudou = true; 
-    }
+
     if(IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)){
         (*personagemSel)++;
         if(*personagemSel > arqueiro) *personagemSel = guerreiro;
@@ -67,7 +50,8 @@ void AtualizarSelecao(int* estado, int* personagemSel, int* personagemConfirmado
     if(mudou){ 
         *estado = animado; 
     }
-    if(IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+
+    if(IsKeyPressed(KEY_ENTER)){
         *personagemConfirmado = *personagemSel;
         *jogoIniciado = true;
     }
@@ -107,13 +91,11 @@ void DesenharCenaEsticada(Texture2D fundo, int estado, int personagemSel,
         ClearBackground(BLACK);
         DrawTexturePro(fundo, sourceFundo, dest, (Vector2){0,0}, 0.0f, WHITE);
         DrawTexturePro(frameDesenhar, sourceFrame, dest, (Vector2){0,0}, 0.0f, WHITE);
-        desenharCursor();
     EndDrawing();
 }
 
 void FinalizarJogo(Texture2D fundo, AnimacaoPersonagem guerreiro, AnimacaoPersonagem maga, 
     AnimacaoPersonagem arqueiro){
-    unloadCursor();
     UnloadTexture(fundo);
     for(int i=0;i<frames;i++){
         UnloadTexture(guerreiro.frames[i]);
@@ -124,15 +106,20 @@ void FinalizarJogo(Texture2D fundo, AnimacaoPersonagem guerreiro, AnimacaoPerson
 
 void MostrarProximaTela(int personagemConfirmado) {
     Personagem p;
+    p.dinheiro = 0; 
+
     if(personagemConfirmado == 0){
         p.nome = "Guerreiro";
         p.coracoes = 5;
+        p.coracoes_max = 5; 
     }else if(personagemConfirmado == 1){
         p.nome = "Maga";
         p.coracoes = 3;
+        p.coracoes_max = 3;
     }else{
         p.nome = "Arqueiro";
         p.coracoes = 4;
+        p.coracoes_max = 4; 
     }
     TelaHub(p);
 }
@@ -152,7 +139,7 @@ int RodarTelaSelecao(void){
     bool jogoIniciado = false;
     int personagemConfirmado = guerreiro;
 
-    while (IsKeyDown(KEY_ENTER) || IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+    while (IsKeyDown(KEY_ENTER)) {
         BeginDrawing();
         ClearBackground(BLACK);
         DrawText("CARREGANDO...", 10, 10, 20, GRAY);
@@ -160,21 +147,9 @@ int RodarTelaSelecao(void){
     }
 
     while(!WindowShouldClose() && !jogoIniciado){
-        float screenW = (float)GetScreenWidth();
-        float screenH = (float)GetScreenHeight();
-
-        float larguraG = screenW * 0.285f;
-        float larguraM = screenW * 0.285f;
-        float larguraA = screenW * 0.285f;
-        float ajusteEsq = screenW * 0.07f; 
-        Rectangle hitboxG = {ajusteEsq, 0, larguraG, screenH};
-        Rectangle hitboxM = {ajusteEsq + larguraG, 0, larguraM, screenH};
-        Rectangle hitboxA = {ajusteEsq + larguraG + larguraM, 0, larguraA, screenH};
-
-        Vector2 mouseReal = GetMousePosition();
-
-        clickCursor(IsMouseButtonDown(MOUSE_LEFT_BUTTON));
-        AtualizarSelecao(&estado, &personagemSel, &personagemConfirmado, &jogoIniciado, mouseReal, hitboxG, hitboxM, hitboxA);
+        
+        AtualizarSelecao(&estado, &personagemSel, &personagemConfirmado, &jogoIniciado);
+        
         if (estado == animado) {
             AtualizarAnimacao(&estado, &frameAnimAtual, &timerAnim);
         }
